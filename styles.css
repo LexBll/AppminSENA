@@ -1,0 +1,231 @@
+/* --- COLORES --- */
+:root {
+    --color-fondo-blanco: #F5FFFF;
+    --color-texto-negro: #1C1B18;
+    --color-boton-amarillo: #FFC845;
+    --color-inputs: rgba(28, 27, 24, 0.08); /* Un gris muy suave derivado de tu negro para los campos de texto */
+}
+
+
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--color-fondo-blanco);
+    color: var(--color-texto-negro);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* columna principal */
+header, main, footer {
+    width: 100%;
+    max-width: 1000px;
+    background-color: var(--color-fondo-blanco);
+    box-sizing: border-box;
+}
+
+/* --- CABECERA --- */
+header {
+    padding: 30px 20px 10px 20px;
+    text-align: center;
+    position: relative;
+}
+
+header h1 {
+    margin: 0;
+    color: var(--color-texto-negro);
+    font-size: 32px;
+    font-weight: 800;
+}
+
+header p, header h2 {
+    color: var(--color-texto-negro);
+    font-size: 16px;
+    margin-top: 5px;
+    font-weight: normal;
+    opacity: 0.8; /* Un poco más claro para diferenciarlo del título */
+}
+
+header a {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: var(--color-texto-negro);
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+
+header a:hover {
+    border-bottom: 2px solid var(--color-boton-amarillo);
+}
+
+/* --- principal --- */
+main {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+img {
+    width: calc(100% + 40px);
+    margin-left: -20px;
+    margin-bottom: 25px;
+    display: block;
+}
+
+h2, h3 {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid rgba(28, 27, 24, 0.1);
+    margin: 30px 0;
+}
+
+/* --- formularios --- */
+form {
+    width: 100%;
+    margin-top: 20px;
+}
+
+form div {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin-bottom: 8px;
+    color: var(--color-texto-negro);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* redondeado de las casillas */
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input[type="password"],
+select {
+    background-color: var(--color-inputs);
+    border: 2px solid transparent;
+    border-radius: 12px; 
+    padding: 15px 20px;
+    font-size: 15px;
+    color: var(--color-texto-negro);
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+input:focus, select:focus {
+    border-color: var(--color-boton-amarillo);
+}
+
+input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+    accent-color: var(--color-texto-negro);
+}
+
+/* enlace por ahora falso de terminos jajaja*/
+main a {
+    color: var(--color-texto-negro);
+    font-weight: bold;
+}
+
+main a:hover {
+    color: var(--color-boton-amarillo);
+}
+
+/* --- botones --- */
+button {
+    background-color: var(--color-boton-amarillo);
+    color: var(--color-texto-negro); /* contraste de texto */
+    border: none;
+    border-radius: 12px; 
+    padding: 16px 20px;
+    width: 100%;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+/* Botones secundarios (como el de "Volver al inicio" o "Modificar base de datos") */
+button.secundario, 
+.acciones button:nth-child(2) {
+    background-color: var(--color-texto-negro);
+    color: var(--color-fondo-blanco);
+}
+
+/* --- LISTAS Y SECCIONES (Resumen y Anuncios) --- */
+.features {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+}
+
+.features div {
+    padding: 10px;
+}
+
+.features h3 {
+    margin: 0 0 5px 0;
+    font-weight: 800;
+}
+
+.features p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/*  pago exitoso */
+.resumen-pago, .anuncios {
+    background-color: var(--color-inputs);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.anuncios h3 {
+    text-align: left;
+}
+
+ul {
+    padding-left: 20px;
+}
+
+li {
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+/* --- pie --- */
+footer {
+    padding: 20px;
+    text-align: center;
+    color: var(--color-texto-negro);
+    font-size: 14px;
+    font-weight: bold;
+    padding-bottom: 40px;
+    opacity: 0.7;
+}
