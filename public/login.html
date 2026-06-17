@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appmin - Iniciar Sesión</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="script.js" defer></script>
+    <!-- Vue 3 CDN: reemplaza el módulo de login que existía en script.js -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
     <header>
@@ -13,23 +14,99 @@
         <h2>Inicia sesión tu Appmin</h2>
     </header>
 
-    <main>
-        <form id="formularioLogin">
+    <!-- Punto de funcionalidad de la instancia Vue para el login -->
+    <main id="appLogin">
+        <!-- @submit.prevent: Vue intercepta el submit del formulario y llama
+             a iniciarSesion(). El .prevent evita la recarga de página que
+             haría un submit HTML tradicional. -->
+        <form @submit.prevent="iniciarSesion">
             <div>
                 <label for="usuario">Usuario:</label>
-                <input type="text" id="usuario" name="usuario" required>
+                <!-- v-model enlaza el input directamente a form.usuario en data().
+                     Cada tecla que el usuario escribe actualiza el valor en Vue. -->
+                <input type="text" id="usuario" v-model="form.usuario" required>
             </div>
-            
             <div>
                 <label for="contrasena">Contraseña:</label>
-                <input type="password" id="contrasena" name="contrasena" required>
+                <input type="password" id="contrasena" v-model="form.contrasena" required>
             </div>
 
-            <button type="submit">Ingresar</button>
+            <!-- :disabled es un binding dinámico. Cuando estado es 'cargando',
+                 el botón se deshabilita para evitar doble envío del formulario. -->
+            <button type="submit" :disabled="estado === 'cargando'">
+                <!-- El texto del botón cambia reactivamente según el estado.
+                     Da retroalimentación visual inmediata al usuario. -->
+                {{ estado === 'cargando' ? 'Verificando...' : 'Ingresar' }}
+            </button>
         </form>
-        
-        <p id="mensajeLogin" style="text-align: center; font-weight: bold; margin-top: 15px;"></p>
+
+        <!-- Mensajes de respuesta controlados por "estado" Solo uno de estos párrafos es visible a la vez. -->
+        <p v-if="estado === 'error'"
+           style="color: red; text-align: center; font-weight: bold; margin-top: 15px;">
+            {{ mensajeError }}
+        </p>
+        <p v-if="estado === 'exito'"
+           style="color: #2ecc71; text-align: center; font-weight: bold; margin-top: 15px;">
+            Acceso concedido. Redirigiendo...
+        </p>
     </main>
 
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    // Los campos del formulario como objeto. v-model los mantiene
+                    // sincronizados con los inputs sin document.getElementById().
+                    form: { usuario: '', contrasena: '' },
+                    // Estado del proceso de login:
+                    // idle o esperando, cargando, exito y error
+                    estado: 'idle',
+                    mensajeError: ''
+                };
+            },
+            methods: {
+                async iniciarSesion() {
+                    this.estado = 'cargando';
+                    this.mensajeError = '';
+
+                    try {
+                        // Se envían usuario y contraseña al backend.
+                        // El servidor compara la contraseña con el hash bcrypt almacenado en MySQL.
+                        // Nunca viaja el hash, solo el texto plano por HTTPS.
+                        const respuesta = await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.form)
+                        });
+
+                        const resultado = await respuesta.json();
+
+                        if (respuesta.ok) {
+                            // El servidor devuelve un JWT (JSON Web Token) firmado.
+                            // Se guarda en localStorage para enviarlo en cada petición
+                            // al dashboard como prueba de identidad (Bearer Token).
+                            localStorage.setItem('token', resultado.token);
+                            localStorage.setItem('nombreAdmin', resultado.nombreAdmin);
+                            this.estado = 'exito';
+                            // Redirección con pequeño delay para que el admin
+                            // vea el mensaje de confirmación antes de cambiar de página.
+                            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+                        } else {
+                            // El servidor respondió con 401: credenciales incorrectas.
+                            // Se muestra el mensaje que viene del backend.
+                            this.estado = 'error';
+                            this.mensajeError = resultado.mensaje;
+                        }
+                    } catch (error) {
+                        // Error de red: el servidor no está corriendo o no hay conexión.
+                        this.estado = 'error';
+                        this.mensajeError = 'Error de conexión con el servidor.';
+                    }
+                }
+            }
+        }).mount('#appLogin');
+    </script>
 </body>
 </html>

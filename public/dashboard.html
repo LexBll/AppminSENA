@@ -5,35 +5,162 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tuAppmin - Panel de Control</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="script.js" defer></script>
+    <!-- Vue 3 CDN: permite usar directivas reactivas en el HTML sin proceso de compilación. -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
-    <header>
-        <h1>tuAppmin</h1>
-        <h2 id ="saludoAdmin">Cargando Bienvenida...</h2>
-    </header>
+    <!-- El div wrapper es necesario para que Vue el heater y la lista de pagos de una sola vez -->
+    <div id="appDashboard">
+        <header>
+            <h1>tuAppmin</h1>
+            <!-- {{ nombreAdmin }} lee el valor reactivo del data() de Vue.
+                 Antes se hacía con document.getElementById('saludoAdmin').textContent -->
+            <h2>Bienvenido, {{ nombreAdmin }}</h2>
+        </header>
 
-    <main>
-        <img src="imagen-conjunto.jpg" alt="Vista del conjunto residencial">
+        <main>
+            <img src="imagen-conjunto.jpg" alt="Vista del conjunto residencial">
 
-        <section>
-    <h2>Últimos Pagos</h2>
-    <ul id="listaPagos">
-        </ul>
-</section>
+            <section>
+                <h2>Últimos Pagos</h2>
 
-        <section class="acciones">
-            <button type="button">Generar reporte de pagos de este mes</button>
-            <button type="button">Modificar Base de datos</button>
-        </section>
+                <!-- v-if / v-else-if / v-else: Vue evalúa estas condiciones cada vez
+                     que cambia "cargando" o "pagos", y muestra solo el bloque correcto.
+                     Reemplaza la lógica manual con if/else dentro de cargarPagos(). -->
+                <p v-if="cargando">Cargando pagos...</p>
+                <p v-else-if="pagos.length === 0">No hay pagos registrados aún.</p>
 
-        <section>
-            <h3>📁 Base de Datos</h3>
-        </section>
-    </main>
+                <ul v-else>
+                    <!-- v-for recorre el array "pagos" y genera un <li> por cada elemento.
+                         :key le da a Vue un identificador único por fila para que pueda
+                         actualizar solo el elemento que cambió, no toda la lista para que no tengas que escribir todo otra vez.
+                         Reemplaza el loop con createElement/appendChild deantes. -->
+                    <li v-for="pago in pagos" :key="pago.id_pago">
+                        <strong>{{ pago.nombre_pago }}</strong> — ${{ pago.cantidad_pago }} ({{ pago.metodo_pago }})
+                        <!-- @click es la forma Vue de addEventListener('click', ...).
+                             Pasa el objeto pago completo para tener todos los datos disponibles. -->
+                        <button @click="editarPago(pago)" style="padding: 5px 10px; margin: 0 5px;">✏️ Editar</button>
+                        <button @click="eliminarPago(pago.id_pago)" style="padding: 5px 10px; background-color: #ff4d4d; color: white;">🗑️ Eliminar</button>
+                    </li>
+                </ul>
+            </section>
 
-    <footer>
-        <p>Appmin.com</p>
-    </footer>
+            <section class="acciones">
+                <button type="button">Generar reporte de pagos de este mes</button>
+                <button type="button">Modificar Base de datos</button>
+            </section>
+
+            <section>
+                <h3>📁 Base de Datos</h3>
+            </section>
+        </main>
+
+        <footer>
+            <p>Appmin.com</p>
+        </footer>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    // El nombre se recupera del localStorage donde lo guardó login.html
+                    // tras el inicio de sesión exitoso.
+                    nombreAdmin: localStorage.getItem('nombreAdmin') || 'Administrador',
+                    pagos: [],      // Array reactivo: cada vez que cambia, Vue actualiza el v-for
+                    cargando: true  // Controla el mensaje de "Cargando..." mientras llega la respuesta
+                };
+            },
+            mounted() {
+                // mounted() se ejecuta automáticamente cuando Vue termina de renderizar el HTML.
+                // Es el lugar correcto para hacer la primera carga de datos.
+
+                // Verificación de sesión: si no hay token en localStorage, el usuario
+                // no ha iniciado sesión y se le redirige a login.
+                // en el cliente; el servidor también rechaza las peticiones sin token.
+                if (!localStorage.getItem('token')) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                this.cargarPagos();
+            },
+            methods: {
+                // cabecerasAuth() centraliza los headers de autenticación para no
+                // repetir el mismo código en cada fetch. El token JWT se envía en el
+                // header Authorization siguiendo el estándar Bearer Token.
+                // El servidor lee este header en el middleware(puente) verificarToken().
+                cabecerasAuth() {
+                    return {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    };
+                },
+
+                // Maneja respuestas 401 (sin token) y 403 (token expirado o inválido).
+                // Limpia el localStorage y redirige al login para que el admin inicie sesión de nuevo con credenciales validas.
+                manejarSesionExpirada(respuesta) {
+                    if (respuesta.status === 401 || respuesta.status === 403) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('nombreAdmin');
+                        window.location.href = 'login.html';
+                        return true;
+                    }
+                    return false;
+                },
+
+                async cargarPagos() {
+                    this.cargando = true;
+                    try {
+                        // El token JWT va en el header. Sin él, el servidor rechaza la petición con 401 antes de siquiera tocar la base de datos.
+                        const respuesta = await fetch('/api/pagos', { headers: this.cabecerasAuth() });
+                        if (this.manejarSesionExpirada(respuesta)) return;
+                        // Asignar al array reactivo "pagos" hace que Vue recree la lista automáticamente con los nuevos datos.
+                        this.pagos = await respuesta.json();
+                    } catch (error) {
+                        console.error('Error al cargar pagos:', error);
+                    } finally {
+                        // finally garantiza que cargando vuelve a false sin importar
+                        // si la petición tuvo éxito o falló.
+                        this.cargando = false;}
+                },
+
+                async editarPago(pago) {
+                    const nuevaCantidad = prompt('Nueva cantidad:', pago.cantidad_pago);
+                    if (!nuevaCantidad) return;
+                    const nuevoMetodo = prompt('Nuevo método (PSE, Tarjeta, etc.):', pago.metodo_pago);
+                    if (!nuevoMetodo) return;
+
+                    try {
+                        const respuesta = await fetch(`/api/pagos/${pago.id_pago}`, {
+                            method: 'PUT',
+                            headers: this.cabecerasAuth(),
+                            body: JSON.stringify({ cantidadPago: nuevaCantidad, metodoPago: nuevoMetodo })
+                        });
+                        if (this.manejarSesionExpirada(respuesta)) return;
+                        // Tras editar, se recarga la lista completa para reflejar el cambio.
+                        if (respuesta.ok) await this.cargarPagos();
+                    } catch (error) {
+                        console.error(error);
+                    }
+                },
+
+                async eliminarPago(id) {
+                    if (!confirm('¿Estás seguro de que deseas eliminar este pago?')) return;
+                    try {
+                        const respuesta = await fetch(`/api/pagos/${id}`, {
+                            method: 'DELETE',
+                            headers: this.cabecerasAuth()
+                        });
+                        if (this.manejarSesionExpirada(respuesta)) return;
+                        if (respuesta.ok) await this.cargarPagos();
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+            }
+        }).mount('#appDashboard');
+    </script>
 </body>
 </html>
