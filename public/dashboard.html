@@ -16,6 +16,9 @@
             <!-- {{ nombreAdmin }} lee el valor reactivo del data() de Vue.
                  Antes se hacía con document.getElementById('saludoAdmin').textContent -->
             <h2>Bienvenido, {{ nombreAdmin }}</h2>
+            <!-- @click.prevent usa el mismo estilo que el enlace "Tu Appmin (Ingresar)"
+                 del index: position absolute top-right definido en header a de styles.css -->
+            <a href="#" @click.prevent="cerrarSesion">Cerrar Sesión</a>
         </header>
 
         <main>
@@ -144,6 +147,15 @@
                     } catch (error) {
                         console.error(error);
                     }
+                },
+
+                cerrarSesion() {
+                    // Elimina el token y el nombre del localStorage.
+                    // Sin token, cualquier intento de volver al dashboard
+                    // será rechazado por el mounted() y redirigido al login.
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('nombreAdmin');
+                    window.location.href = 'login.html';
                 },
 
                 async eliminarPago(id) {
