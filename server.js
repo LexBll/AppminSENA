@@ -127,27 +127,29 @@ app.delete('/api/pagos/:id', verificarToken, (req, res) => {
 });
 
 // =========================================================================
-// 5. REGISTRO de Administradores (POST) — protegida con JWT
-// Solo un admin autenticado puede crear nuevas cuentas de administrador (sigo tratando de verificar que este bien para hacer el modulo completo).
+// 5. REGISTRO de Administradores (POST) — ruta pública
+// Accesible desde la página de login para que un nuevo admin pueda registrarse.
 // =========================================================================
-app.post('/api/auth/registro', verificarToken, (req, res) => {
-    const { usuario, contrasena, nombreCompleto, codigoConjunto } = req.body;
+app.post('/api/auth/registro', (req, res) => {
+    const { nombres, apellidos, telefono, usuario, contrasena, codigoConjunto } = req.body;
 
     // bcrypt.hash genera un hash seguro con 10 rondas de salt.
-    // Más rondas = más seguro pero más lento. 10 es el estándar recomendado.
     // El hash resultante tiene el formato: $2b$10$<salt><hash>
+    // Se guarda el hash en la BD, nunca la contraseña en texto plano.
     bcrypt.hash(contrasena, 10, (error, hash) => {
         if (error) {
             console.error('❌ Error al hashear contraseña:', error);
             return res.status(500).json({ mensaje: 'Error al procesar la contraseña' });
         }
 
+        // Columnas corregidas para coincidir con la estructura real de la tabla:
+        // nombres, apellidos y telefono como campos separados.
         const sqlQuery = `
-            INSERT INTO Administradores (usuario, contrasena, nombre_completo, codigo_conjunto)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO Administradores (nombres, apellidos, telefono, usuario, contrasena, codigo_conjunto)
+            VALUES (?, ?, ?, ?, ?, ?)
         `;
-        // Se guarda el hash, nunca la contraseña original.
-        conexion.query(sqlQuery, [usuario, hash, nombreCompleto, codigoConjunto], (error) => {
+
+        conexion.query(sqlQuery, [nombres, apellidos, telefono, usuario, hash, codigoConjunto], (error) => {
             if (error) {
                 console.error('❌ Error al registrar administrador:', error);
                 if (error.code === 'ER_DUP_ENTRY') {
@@ -208,6 +210,46 @@ app.post('/api/auth/login', (req, res) => {
                 token,
                 nombreAdmin: admin.nombre_completo
             });
+        });
+    });
+});
+
+// =========================================================================
+// 7. REPORTE MENSUAL: Pagos del mes actual (GET) — protegida con JWT
+// =========================================================================
+app.get('/api/reporte/mensual', verificarToken, (req, res) => {
+    // MONTH() y YEAR() filtran registros del mes y año actuales en MySQL.
+    // CURRENT_DATE() devuelve la fecha del servidor sin hora.
+    const sqlQuery = `
+        SELECT
+            p.id_pago,
+            p.nombre_pago,
+            p.cantidad_pago,
+            p.fecha_pago,
+            p.metodo_pago,
+            c.nombre_conjunto
+        FROM Pagos_Recibidos p
+        JOIN Conjuntos c ON p.codigo_conjunto = c.codigo_conjunto
+        WHERE MONTH(p.fecha_pago) = MONTH(CURRENT_DATE())
+        AND YEAR(p.fecha_pago) = YEAR(CURRENT_DATE())
+        ORDER BY p.fecha_pago DESC
+    `;
+
+    conexion.query(sqlQuery, (error, pagos) => {
+        if (error) {
+            console.error('❌ Error al generar reporte:', error);
+            return res.status(500).json({ mensaje: 'Error al generar el reporte' });
+        }
+
+        // Los totales se calculan en el servidor para no exponer lógica de negocio al cliente.
+        const totalRecaudado = pagos.reduce((sum, p) => sum + parseFloat(p.cantidad_pago), 0);
+        const mes = new Date().toLocaleString('es-CO', { month: 'long', year: 'numeric' });
+
+        res.status(200).json({
+            mes,
+            totalPagos: pagos.length,
+            totalRecaudado,
+            pagos
         });
     });
 });

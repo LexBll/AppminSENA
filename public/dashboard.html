@@ -9,7 +9,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
-    <!-- El div wrapper es necesario para que Vue el heater y la lista de pagos de una sola vez -->
+    <!-- El div wrapper es necesario para que Vue controle el header y el contenido a la vez -->
     <div id="appDashboard">
         <header>
             <h1>tuAppmin</h1>
@@ -22,43 +22,96 @@
         </header>
 
         <main>
-            <img src="imagen-conjunto.jpg" alt="Vista del conjunto residencial">
+            <img src="imagen-conjunto.jpg" alt="Vista del conjunto residencial" class="ocultar-impresion">
 
-            <section>
+            <!-- ===================== LISTA DE PAGOS ===================== -->
+            <section class="ocultar-impresion">
                 <h2>Últimos Pagos</h2>
 
                 <!-- v-if / v-else-if / v-else: Vue evalúa estas condiciones cada vez
-                     que cambia "cargando" o "pagos", y muestra solo el bloque correcto.
-                     Reemplaza la lógica manual con if/else dentro de cargarPagos(). -->
+                     que cambia "cargando" o "pagos", y muestra solo el bloque correcto. -->
                 <p v-if="cargando">Cargando pagos...</p>
                 <p v-else-if="pagos.length === 0">No hay pagos registrados aún.</p>
 
                 <ul v-else>
                     <!-- v-for recorre el array "pagos" y genera un <li> por cada elemento.
-                         :key le da a Vue un identificador único por fila para que pueda
-                         actualizar solo el elemento que cambió, no toda la lista para que no tengas que escribir todo otra vez.
-                         Reemplaza el loop con createElement/appendChild deantes. -->
+                         :key le da a Vue un identificador único por fila para actualizar
+                         solo el elemento que cambió, no toda la lista. -->
                     <li v-for="pago in pagos" :key="pago.id_pago">
                         <strong>{{ pago.nombre_pago }}</strong> — ${{ pago.cantidad_pago }} ({{ pago.metodo_pago }})
-                        <!-- @click es la forma Vue de addEventListener('click', ...).
-                             Pasa el objeto pago completo para tener todos los datos disponibles. -->
+                        <!-- @click es la forma Vue de addEventListener('click', ...) -->
                         <button @click="editarPago(pago)" style="padding: 5px 10px; margin: 0 5px;">✏️ Editar</button>
                         <button @click="eliminarPago(pago.id_pago)" style="padding: 5px 10px; background-color: #ff4d4d; color: white;">🗑️ Eliminar</button>
                     </li>
                 </ul>
             </section>
 
-            <section class="acciones">
-                <button type="button">Generar reporte de pagos de este mes</button>
-                <button type="button">Modificar Base de datos</button>
+            <!-- ===================== BOTONES DE ACCIÓN ===================== -->
+            <section class="acciones ocultar-impresion">
+                <!-- @click conecta el botón al método generarReporte().
+                     :disabled bloquea el botón mientras la petición está en vuelo. -->
+                <button @click="generarReporte" :disabled="cargandoReporte">
+                    {{ cargandoReporte ? 'Generando...' : '📊 Generar reporte del mes actual' }}
+                </button>
+                <button type="button" class="secundario">Modificar Base de datos</button>
             </section>
 
-            <section>
-                <h3>📁 Base de Datos</h3>
+            <!-- ===================== REPORTE MENSUAL ===================== -->
+            <!-- v-if="reporte": esta sección solo aparece después de hacer clic en el botón
+                 y recibir los datos del servidor. En impresión es lo único visible. -->
+            <section v-if="reporte" class="reporte-mensual">
+
+                <h2>📊 Reporte de Pagos — {{ reporte.mes }}</h2>
+
+                <!-- Tarjetas de resumen con los totales del mes -->
+                <div class="resumen-reporte">
+                    <div class="resumen-item">
+                        <span>Total de pagos registrados</span>
+                        <!-- toLocaleString formatea el número con separadores de miles colombianos -->
+                        <strong>{{ reporte.totalPagos }}</strong>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Total recaudado</span>
+                        <strong>${{ reporte.totalRecaudado.toLocaleString('es-CO') }}</strong>
+                    </div>
+                </div>
+
+                <!-- Tabla detallada con cada pago del mes -->
+                <table class="tabla-reporte">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre</th>
+                            <th>Cantidad</th>
+                            <th>Método</th>
+                            <th>Fecha</th>
+                            <th>Conjunto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- v-for genera una fila por cada pago devuelto por /api/reporte/mensual -->
+                        <tr v-for="pago in reporte.pagos" :key="pago.id_pago">
+                            <td>{{ pago.id_pago }}</td>
+                            <td>{{ pago.nombre_pago }}</td>
+                            <td>${{ Number(pago.cantidad_pago).toLocaleString('es-CO') }}</td>
+                            <td>{{ pago.metodo_pago }}</td>
+                            <!-- toLocaleDateString convierte la fecha ISO a formato legible en español -->
+                            <td>{{ new Date(pago.fecha_pago).toLocaleDateString('es-CO') }}</td>
+                            <td>{{ pago.nombre_conjunto }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- window.print() abre el diálogo de impresión del navegador.
+                     El usuario puede elegir "Guardar como PDF" desde ahí. -->
+                <button @click="imprimirReporte" class="ocultar-impresion secundario">
+                    🖨️ Imprimir / Guardar como PDF
+                </button>
             </section>
+
         </main>
 
-        <footer>
+        <footer class="ocultar-impresion">
             <p>Appmin.com</p>
         </footer>
     </div>
@@ -69,20 +122,16 @@
         createApp({
             data() {
                 return {
-                    // El nombre se recupera del localStorage donde lo guardó login.html
-                    // tras el inicio de sesión exitoso.
                     nombreAdmin: localStorage.getItem('nombreAdmin') || 'Administrador',
-                    pagos: [],      // Array reactivo: cada vez que cambia, Vue actualiza el v-for
-                    cargando: true  // Controla el mensaje de "Cargando..." mientras llega la respuesta
+                    pagos: [],
+                    cargando: true,
+                    // reporte: null significa que el módulo aún no ha sido generado.
+                    // Cuando el servidor responde, se llena con { mes, totalPagos, totalRecaudado, pagos }
+                    reporte: null,
+                    cargandoReporte: false
                 };
             },
             mounted() {
-                // mounted() se ejecuta automáticamente cuando Vue termina de renderizar el HTML.
-                // Es el lugar correcto para hacer la primera carga de datos.
-
-                // Verificación de sesión: si no hay token en localStorage, el usuario
-                // no ha iniciado sesión y se le redirige a login.
-                // en el cliente; el servidor también rechaza las peticiones sin token.
                 if (!localStorage.getItem('token')) {
                     window.location.href = 'login.html';
                     return;
@@ -90,10 +139,6 @@
                 this.cargarPagos();
             },
             methods: {
-                // cabecerasAuth() centraliza los headers de autenticación para no
-                // repetir el mismo código en cada fetch. El token JWT se envía en el
-                // header Authorization siguiendo el estándar Bearer Token.
-                // El servidor lee este header en el middleware(puente) verificarToken().
                 cabecerasAuth() {
                     return {
                         'Content-Type': 'application/json',
@@ -101,8 +146,6 @@
                     };
                 },
 
-                // Maneja respuestas 401 (sin token) y 403 (token expirado o inválido).
-                // Limpia el localStorage y redirige al login para que el admin inicie sesión de nuevo con credenciales validas.
                 manejarSesionExpirada(respuesta) {
                     if (respuesta.status === 401 || respuesta.status === 403) {
                         localStorage.removeItem('token');
@@ -116,17 +159,37 @@
                 async cargarPagos() {
                     this.cargando = true;
                     try {
-                        // El token JWT va en el header. Sin él, el servidor rechaza la petición con 401 antes de siquiera tocar la base de datos.
                         const respuesta = await fetch('/api/pagos', { headers: this.cabecerasAuth() });
                         if (this.manejarSesionExpirada(respuesta)) return;
-                        // Asignar al array reactivo "pagos" hace que Vue recree la lista automáticamente con los nuevos datos.
                         this.pagos = await respuesta.json();
                     } catch (error) {
                         console.error('Error al cargar pagos:', error);
                     } finally {
-                        // finally garantiza que cargando vuelve a false sin importar
-                        // si la petición tuvo éxito o falló.
-                        this.cargando = false;}
+                        this.cargando = false;
+                    }
+                },
+
+                async generarReporte() {
+                    this.cargandoReporte = true;
+                    this.reporte = null; // Limpia reporte anterior antes de pedir uno nuevo
+                    try {
+                        // Llama al nuevo endpoint del servidor que filtra pagos del mes actual
+                        const respuesta = await fetch('/api/reporte/mensual', { headers: this.cabecerasAuth() });
+                        if (this.manejarSesionExpirada(respuesta)) return;
+                        // Asignar al objeto reactivo "reporte" hace que Vue
+                        // muestre automáticamente la sección v-if="reporte"
+                        this.reporte = await respuesta.json();
+                    } catch (error) {
+                        console.error('Error al generar reporte:', error);
+                    } finally {
+                        this.cargandoReporte = false;
+                    }
+                },
+
+                imprimirReporte() {
+                    // Abre el diálogo nativo de impresión del navegador.
+                    // El @media print en styles.css oculta todo excepto .reporte-mensual.
+                    window.print();
                 },
 
                 async editarPago(pago) {
@@ -134,7 +197,6 @@
                     if (!nuevaCantidad) return;
                     const nuevoMetodo = prompt('Nuevo método (PSE, Tarjeta, etc.):', pago.metodo_pago);
                     if (!nuevoMetodo) return;
-
                     try {
                         const respuesta = await fetch(`/api/pagos/${pago.id_pago}`, {
                             method: 'PUT',
@@ -142,20 +204,10 @@
                             body: JSON.stringify({ cantidadPago: nuevaCantidad, metodoPago: nuevoMetodo })
                         });
                         if (this.manejarSesionExpirada(respuesta)) return;
-                        // Tras editar, se recarga la lista completa para reflejar el cambio.
                         if (respuesta.ok) await this.cargarPagos();
                     } catch (error) {
                         console.error(error);
                     }
-                },
-
-                cerrarSesion() {
-                    // Elimina el token y el nombre del localStorage.
-                    // Sin token, cualquier intento de volver al dashboard
-                    // será rechazado por el mounted() y redirigido al login.
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('nombreAdmin');
-                    window.location.href = 'login.html';
                 },
 
                 async eliminarPago(id) {
@@ -170,6 +222,12 @@
                     } catch (error) {
                         console.error(error);
                     }
+                },
+
+                cerrarSesion() {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('nombreAdmin');
+                    window.location.href = 'login.html';
                 }
             }
         }).mount('#appDashboard');

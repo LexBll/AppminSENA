@@ -1,0 +1,26 @@
+Evidencia GA7-220501096-AA4-EV03
+Componente front-end del proyecto formativo
+
+Aprendiz: Esteban Alexander Ballesteros Rincón
+Proyecto: Appmin - Portal de Pagos Residenciales
+
+Enlace del repositorio:
+https://github.com/LexBll/AppminSENA
+
+Tecnologías utilizadas:
+- HTML5 / CSS3
+- Vue 3 (CDN) — framework frontend reactivo
+- JavaScript (ES6+)
+- Node.js + Express — servidor backend
+- MySQL (XAMPP) — base de datos
+- bcryptjs — encriptación de contraseñas
+- jsonwebtoken (JWT) — autenticación de sesiones
+
+Módulos del frontend codificados:
+- index.html        — Página principal / landing page
+- login.html        — Módulo de autenticación con Vue
+- dashboard.html    — Panel de control del administrador con Vue (CRUD de pagos)
+- pago.html         — Formulario de pago con Vue (estados: idle, procesando, éxito, error)
+- exito.html        — Página de confirmación
+- styles.css        — Estilos globales del proyecto
+- script.js         — Efectos de interfaz compartidos
