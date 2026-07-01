@@ -9,13 +9,14 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
+    <div id="appLogin">
     <header>
         <h1>Appmin</h1>
         <!-- El título cambia reactivamente según la vista activa -->
         <h2>{{ vista === 'login' ? 'Inicia sesión' : 'Crear cuenta de administrador' }}</h2>
     </header>
 
-    <main id="appLogin">
+    <main>
 
         <!-- ==================== VISTA: LOGIN ==================== -->
         <!-- v-if="vista === 'login'": solo visible cuando la vista activa es login -->
@@ -106,6 +107,7 @@
         </p>
 
     </main>
+    </div>
 
     <script>
         const { createApp } = Vue;

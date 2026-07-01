@@ -5,97 +5,166 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appmin - Información de tu pago</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Vue 3 cargado desde CDN. No requiere instalación ni proceso de compilación.
-         Expone el objeto global "Vue" que usamos abajo con createApp(). -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        /* Fondo amarillo exclusivo de esta página */
+        body {
+            background-color: var(--color-boton-amarillo);
+        }
+        /* Header transparente sobre fondo amarillo */
+        header {
+            background-color: transparent;
+            padding: 20px;
+        }
+        header h1 {
+            color: white;
+        }
+        /* "Tu Appmin" como botón oscuro en la esquina */
+        header a {
+            background-color: var(--color-texto-negro);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            top: 16px;
+        }
+        header a:hover {
+            border-bottom: none;
+            opacity: 0.85;
+        }
+        /* Centra la tarjeta en el main */
+        main {
+            display: flex;
+            justify-content: center;
+            padding: 10px 20px 40px 20px;
+        }
+        /* Tarjeta blanca con el formulario */
+        .pago-tarjeta {
+            background: white;
+            border-radius: 16px;
+            padding: 36px 32px;
+            width: 95%;
+            max-width: 1400px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+        .pago-tarjeta h2 {
+            font-size: 22px;
+            font-weight: 800;
+            text-align: left;
+            margin: 0 0 4px 0;
+        }
+        .pago-tarjeta .subtitulo {
+            color: #999;
+            font-size: 13px;
+            margin: 0 0 24px 0;
+            text-align: left;
+        }
+        .pago-tarjeta form {
+            margin-top: 0;
+        }
+        /* Fila de checkbox + texto de términos */
+        .terminos {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 16px 0 4px 0;
+            font-size: 13px;
+        }
+        .terminos input[type="checkbox"] {
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        .terminos label {
+            font-weight: normal;
+            margin-bottom: 0;
+            font-size: 13px;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>Appmin</h1>
-        <h2>Información de tu pago</h2>
-        <p>Por los mejores métodos de pago</p>
-    </header>
+    <div id="appPago">
+        <header>
+            <h1>Appmin</h1>
+            <a href="login.html">Tu Appmin</a>
+        </header>
 
-    <!-- id="appPago" aqui se hace el montaje de datos: Vue toma control de todo lo que está
-         dentro de este elemento y puede leer/modificar el contenido -->
-    <main id="appPago">
+        <main>
+            <div class="pago-tarjeta">
 
-        <!-- v-if: Vue muestra u oculta este bloque según el valor de "estado".
-             mientras no haya errores (para que pueda corregir y reintentar). -->
-        <form v-if="estado === 'idle' || estado === 'error'" @submit.prevent="manejarPago">
+                <!-- ====== FORMULARIO: idle o error ====== -->
+                <template v-if="estado === 'idle' || estado === 'error'">
+                    <h2>Información &nbsp;de tu pago</h2>
+                    <p class="subtitulo">Por los mejores métodos de pago</p>
 
-            <!-- v-model crea un enlace bidireccional entre el input y la propiedad
-                 del objeto "form" en Vue. Reemplaza los document.getElementById()
-                 que se usaban antes para leer cada campo al momento del envío. -->
-            <div>
-                <label for="nombre">Nombre completo:</label>
-                <input type="text" id="nombre" v-model="form.nombre" required>
+                    <form @submit.prevent="manejarPago">
+                        <div>
+                            <label for="nombre">Nombre completo</label>
+                            <input type="text" id="nombre" v-model="form.nombre"
+                                   placeholder="Nombre" required>
+                        </div>
+                        <div>
+                            <label for="conjunto">Conjunto Residencial</label>
+                            <select id="conjunto" v-model.number="form.idConjunto" required>
+                                <option value="">Selecciona</option>
+                                <option v-for="c in conjuntos" :key="c.codigo_conjunto" :value="c.codigo_conjunto">
+                                    {{ c.nombre_conjunto }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="cantidad">Cantidad a Pagar ($)</label>
+                            <input type="number" id="cantidad" v-model.number="form.cantidad"
+                                   placeholder="Monto" required>
+                        </div>
+                        <div>
+                            <label for="telefono">Teléfono</label>
+                            <input type="tel" id="telefono" v-model="form.telefono"
+                                   placeholder="Número">
+                        </div>
+                        <div>
+                            <label for="correo">Correo</label>
+                            <input type="email" id="correo" v-model="form.correo"
+                                   placeholder="correo@ejemplo.com">
+                        </div>
+                        <div>
+                            <label for="metodo">Método de Pago</label>
+                            <select id="metodo" v-model="form.metodo" required>
+                                <option value="">Selecciona</option>
+                                <option value="PSE">PSE (Simulado)</option>
+                                <option value="Tarjeta">Tarjeta de Crédito (Simulado)</option>
+                            </select>
+                        </div>
+
+                        <div class="terminos">
+                            <input type="checkbox" id="terminos" v-model="form.aceptaTerminos" required>
+                            <label for="terminos">
+                                No soy un robot.
+                                <a href="#">Lee nuestros términos y condiciones</a>
+                            </label>
+                        </div>
+
+                        <p v-if="estado === 'error'"
+                           style="color: red; font-weight: bold; font-size: 13px; margin: 8px 0 0 0;">
+                            {{ mensajeError }}
+                        </p>
+
+                        <!-- Botón secundario (oscuro) para contrastar con la tarjeta blanca -->
+                        <button type="submit" class="secundario" :disabled="estado === 'procesando'">
+                            Proceder al Pago
+                        </button>
+                    </form>
+                </template>
+
+                <!-- ====== PROCESANDO ====== -->
+                <div v-if="estado === 'procesando'" style="text-align: center; padding: 40px 0;">
+                    <p style="color: #3498db; font-weight: bold; font-size: 18px;">
+                        ⏳ Procesando tu solicitud...
+                    </p>
+                </div>
+
+
             </div>
-            <div>
-                <label for="cantidad">Cantidad a Pagar ($):</label>
-                <!-- .number convierte el valor del input string a número
-                     automáticamente, evitando errores en el backend. -->
-                <input type="number" id="cantidad" v-model.number="form.cantidad" required>
-            </div>
-            <div>
-                <label for="metodo">Método de Pago:</label>
-                <select id="metodo" v-model="form.metodo" required>
-                    <option value="">Selecciona</option>
-                    <option value="PSE">PSE (Simulado)</option>
-                    <option value="Tarjeta">Tarjeta de Crédito (Simulado)</option>
-                </select>
-            </div>
-            <div>
-                <label for="idResidente">Residente (Prueba):</label>
-                <input type="number" id="idResidente" v-model.number="form.idResidente" required>
-            </div>
-            <div>
-                <label for="idConjunto">Conjunto (Prueba):</label>
-                <input type="number" id="idConjunto" v-model.number="form.idConjunto" required>
-            </div>
-
-            <!-- El mensaje de error se muestra dentro del formulario para que el
-                 usuario lo vea sin tener que buscar en otra parte de la página. -->
-            <p v-if="estado === 'error'" style="color: red; font-weight: bold; margin-top: 10px;">
-                {{ mensajeError }}
-            </p>
-
-            <button type="submit" style="background-color: #2ecc71; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; margin-top: 15px;">
-                💳 Proceder al Pago Seguro
-            </button>
-        </form>
-
-        <!-- Estado "procesando": se muestra mientras fetch espera respuesta del servidor.
-             Reemplaza el texto que antes se inyectaba manualmente con mensajeRespuesta.textContent. -->
-        <div v-if="estado === 'procesando'" style="text-align: center; padding: 40px;">
-            <p style="color: #3498db; font-weight: bold; font-size: 18px;">
-                ⏳ Procesando tu solicitud en la base de datos...
-            </p>
-        </div>
-
-        <!-- Nuevo exito,  reemplaza la redirección a exito.html que existía antes.
-             Muestra un resumen del pago usando los datos que ya están en "form",
-             sin pasarlos por URL ni localStorage. -->
-        <div v-if="estado === 'exito'" style="text-align: center;">
-            <p style="color: #2ecc71; font-weight: bold; font-size: 20px; margin-bottom: 20px;">
-                ✅ ¡Pago registrado con éxito!
-            </p>
-            <section class="resumen-pago">
-                <!-- Interpolación Vue: {{ }} muestra el valor reactivo directamente en el HTML. -->
-                <p><strong>Nombre:</strong> {{ form.nombre }}</p>
-                <p><strong>Cantidad:</strong> ${{ form.cantidad }}</p>
-                <p><strong>Método:</strong> {{ form.metodo }}</p>
-            </section>
-            <a href="index.html">
-                <button type="button" style="margin-top: 20px;">Volver al inicio</button>
-            </a>
-        </div>
-
-    </main>
-
-    <footer>
-        <p>Tu Appmin</p>
-    </footer>
+        </main>
+    </div>
 
     <script>
         const { createApp } = Vue;
@@ -103,39 +172,38 @@
         createApp({
             data() {
                 return {
-                    // "form" centraliza todos los campos del formulario en un solo objeto.
-                    // Antes se leían con 5 llamadas a document.getElementById() al enviar.
                     form: {
                         nombre: '',
                         cantidad: null,
                         metodo: '',
-                        idResidente: null,
-                        idConjunto: null
+                        telefono: '',
+                        correo: '',
+                        idConjunto: null,
+                        aceptaTerminos: false
                     },
-                    // "estado" es la máquina de estados del formulario. Un solo valor
-                    // controla qué bloque visual se muestra en pantalla:
-                    // idle -> formulario vacío listo para llenar
-                    // tendremos diferentes mensajes de esto como: procesando, exito, error
                     estado: 'idle',
-                    mensajeError: ''
+                    mensajeError: '',
+                    conjuntos: []
                 };
+            },
+            async mounted() {
+                // Carga los conjuntos reales desde la BD para el dropdown
+                try {
+                    const res = await fetch('/api/conjuntos');
+                    this.conjuntos = await res.json();
+                } catch (e) {
+                    console.error('No se pudieron cargar los conjuntos:', e);
+                }
             },
             methods: {
                 async manejarPago() {
-                    // Validación de datos para que el form no se mande vacio
                     if (!this.form.cantidad || this.form.cantidad <= 0) {
                         this.estado = 'error';
                         this.mensajeError = 'Por favor ingresa un monto válido.';
                         return;
                     }
-
-                    // Cambia el estado a procesando y lo refleja
                     this.estado = 'procesando';
-
                     try {
-                        // fetch manda al backend Express como JSOn
-                        // Los nombres de propiedades deben coincidir con los que
-                        // server.js extrae en req.body (nombrePago, cantidadPago, etc.)
                         const respuesta = await fetch('/api/pagos', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -143,28 +211,34 @@
                                 nombrePago: this.form.nombre,
                                 cantidadPago: this.form.cantidad,
                                 metodoPago: this.form.metodo + ' (Simulado)',
-                                idResidente: this.form.idResidente,
+                                idResidente: 1,
                                 codigoConjunto: this.form.idConjunto
                             })
                         });
-
                         if (respuesta.ok) {
-                            // El pago se guardó en MySQL. Vue cambia el estado a "exito"
-                            // y muestra el resumen sin necesidad de redirigir a otra página.
-                            this.estado = 'exito';
+                            const resultado = await respuesta.json();
+                            // Guarda los datos del pago para mostrarlos en exito.html
+                            const conjuntoSeleccionado = this.conjuntos.find(c => c.codigo_conjunto === this.form.idConjunto);
+                            sessionStorage.setItem('pagoExito', JSON.stringify({
+                                nombre:   this.form.nombre,
+                                conjunto: conjuntoSeleccionado ? conjuntoSeleccionado.nombre_conjunto : '—',
+                                telefono: this.form.telefono,
+                                metodo:   this.form.metodo,
+                                idPago:   resultado.idPago
+                            }));
+                            window.location.href = 'exito.html';
                         } else {
                             const resultado = await respuesta.json();
                             this.estado = 'error';
                             this.mensajeError = 'Error en el sistema: ' + resultado.mensaje;
                         }
                     } catch (error) {
-                        // Este catch atrapa errores de red (servidor caído, sin conexión)
                         this.estado = 'error';
                         this.mensajeError = 'Error de comunicación. Verifica que el servidor esté corriendo.';
                     }
                 }
             }
-        }).mount('#appPago'); // Conecta la instancia Vue al elemento <main id="appPago">
+        }).mount('#appPago');
     </script>
 </body>
 </html>

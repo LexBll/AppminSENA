@@ -5,39 +5,166 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appmin - Pago Procesado</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="script.js" defer></script>
+    <style>
+        header h2 { display: none; }
+
+        .exito-tarjeta {
+            border: 2px solid var(--color-boton-amarillo);
+            border-radius: 12px;
+            padding: 40px 32px;
+            text-align: center;
+            margin: 20px 0 40px 0;
+        }
+
+        .exito-tarjeta h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 0 0 24px 0;
+        }
+
+        .exito-tarjeta p {
+            font-size: 15px;
+            margin: 6px 0;
+            color: var(--color-texto-negro);
+        }
+
+        .exito-tarjeta hr {
+            margin: 20px auto;
+            width: 60%;
+        }
+
+        .exito-tarjeta button {
+            width: auto;
+            padding: 14px 40px;
+            margin-top: 24px;
+        }
+
+        /* Sección de anuncios — 3 columnas */
+        .anuncios-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0;
+            margin: 10px 0 40px 0;
+        }
+
+        .anuncio-item {
+            padding: 0 24px 24px 0;
+            border-right: 1px solid rgba(28, 27, 24, 0.15);
+        }
+
+        .anuncio-item:last-child {
+            border-right: none;
+            padding-right: 0;
+            padding-left: 24px;
+        }
+
+        .anuncio-item:nth-child(2) {
+            padding-left: 24px;
+        }
+
+        .anuncio-item h4 {
+            font-size: 15px;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+        }
+
+        .anuncio-item p {
+            font-size: 13px;
+            margin: 0;
+            opacity: 0.7;
+        }
+
+        .anuncios-titulo {
+            font-size: 22px;
+            font-weight: 800;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        /* Footer social */
+        .footer-redes p {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .footer-social {
+            display: flex;
+            justify-content: flex-start;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        /* Placeholder para íconos — reemplazar con img/SVG cuando los tengas */
+        .social-icono {
+            display: inline-block;
+            width: 26px;
+            height: 26px;
+            border: 2px dashed rgba(28, 27, 24, 0.3);
+            border-radius: 50%;
+        }
+    </style>
 </head>
 <body>
     <header>
         <h1>Appmin</h1>
-        <h2>✔️ Pago procesado</h2>
     </header>
 
     <main>
-        <section class="resumen-pago"> //hace falta hacer que sea dinamico
-            <p><strong>Conjunto:</strong> kjsdvnnaldv</p>
-            <p><strong>Teléfono:</strong> 2145987567498</p>
-            <p><strong>Propiedad:</strong> nn4566lkvbd</p>
-            <p><strong>Pago por PSE #:</strong> 9823479</p>
-        </section>
+        <!-- Tarjeta con borde amarillo -->
+        <div class="exito-tarjeta">
+            <h1>Pago procesado</h1>
 
-        <a href="index.html">
-            <button type="button">Volver al inicio</button>
-        </a>
+            <p><strong>Conjunto:</strong> <span id="dato-conjunto">—</span></p>
+            <p><strong>Teléfono:</strong> <span id="dato-telefono">—</span></p>
+            <p><strong>Nombre:</strong> <span id="dato-nombre">—</span></p>
 
-        <section class="anuncios">
-            <h3>Asamblea & Anuncios de tu propiedad:</h3>
-            <ul>
-                <li>El día 14 de abril habrá asamblea</li>
-                <li><strong>Número de administración:</strong> 982374589743</li>
-                <li><strong>Fecha de pagos es:</strong> 5 de cada mes</li>
-            </ul>
-        </section>
+            <hr>
+
+            <p><strong>Pago por <span id="dato-metodo">—</span> #:</strong> <span id="dato-id">—</span></p>
+
+            <a href="index.html">
+                <button type="button">Volver al inicio</button>
+            </a>
+        </div>
+
+        <!-- Anuncios de la propiedad -->
+        <h2 class="anuncios-titulo">Anuncios de tu propiedad:</h2>
+        <div class="anuncios-grid">
+            <div class="anuncio-item">
+                <h4>Asamblea</h4>
+                <p>El día 14 de abril habrá asamblea</p>
+            </div>
+            <div class="anuncio-item">
+                <h4>Número de administración</h4>
+                <p>982374589743</p>
+            </div>
+            <div class="anuncio-item">
+                <h4>Fecha de pagos es:</h4>
+                <p>5 de cada mes</p>
+            </div>
+        </div>
     </main>
 
-    <footer>
+    <footer class="footer-redes">
         <p>Redes de tu conjunto</p>
-        <p>in</p>
+        <div class="footer-social">
+            <span class="social-icono" title="Facebook"></span>
+            <span class="social-icono" title="LinkedIn"></span>
+            <span class="social-icono" title="YouTube"></span>
+            <span class="social-icono" title="Instagram"></span>
+        </div>
     </footer>
+
+    <script>
+        // Lee los datos del pago guardados por pago.html en sessionStorage
+        const datos = JSON.parse(sessionStorage.getItem('pagoExito') || '{}');
+
+        document.getElementById('dato-conjunto').textContent = datos.conjunto || '—';
+        document.getElementById('dato-telefono').textContent = datos.telefono || '—';
+        document.getElementById('dato-nombre').textContent   = datos.nombre   || '—';
+        document.getElementById('dato-metodo').textContent   = datos.metodo   || '—';
+        document.getElementById('dato-id').textContent       = datos.idPago   || '—';
+    </script>
 </body>
 </html>

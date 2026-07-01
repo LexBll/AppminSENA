@@ -46,7 +46,7 @@ function verificarToken(req, res, next) {
 // =========================================================================
 // 1. INSERCIÓN: Registrar un nuevo pago (POST) — protegida con JWT
 // =========================================================================
-app.post('/api/pagos', verificarToken, (req, res) => {
+app.post('/api/pagos', (req, res) => {
     const { nombrePago, cantidadPago, metodoPago, codigoConjunto, idResidente } = req.body;
     console.log("➡️ Datos de pago recibidos:", req.body);
 
@@ -127,7 +127,21 @@ app.delete('/api/pagos/:id', verificarToken, (req, res) => {
 });
 
 // =========================================================================
-// 5. REGISTRO de Administradores (POST) — ruta pública
+// 5. CONJUNTOS: Devuelve todos los conjuntos (GET) — ruta pública
+// Usada por pago.html para llenar el dropdown con datos reales de la BD.
+// =========================================================================
+app.get('/api/conjuntos', (req, res) => {
+    conexion.query('SELECT codigo_conjunto, nombre_conjunto FROM Conjuntos', (error, resultados) => {
+        if (error) {
+            console.error('❌ Error al obtener conjuntos:', error);
+            return res.status(500).json({ mensaje: 'Error al obtener los conjuntos' });
+        }
+        res.status(200).json(resultados);
+    });
+});
+
+// =========================================================================
+// 6. REGISTRO de Administradores (POST) — ruta pública
 // Accesible desde la página de login para que un nuevo admin pueda registrarse.
 // =========================================================================
 app.post('/api/auth/registro', (req, res) => {
