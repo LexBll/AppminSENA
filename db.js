@@ -1,12 +1,13 @@
-// conexion entre la databasr
 const mysql = require('mysql2');
 
-// Configuración de la conexión a XAMPP/MySQL
+// En local usa XAMPP (localhost/root).
+// En Railway lee las variables de entorno que se configuran en el dashboard.
 const conexion = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',      
-    password: '',      
-    database: 'appmin' 
+    host:     process.env.DB_HOST     || 'localhost',
+    port:     process.env.DB_PORT     || 3306,
+    user:     process.env.DB_USER     || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME     || 'appmin'
 });
 
 // Probando la conexión

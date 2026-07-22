@@ -11,7 +11,7 @@ const jwt = require('jsonwebtoken');
 const conexion = require('./db');
 
 const app = express();
-const puerto = 3000;
+const puerto = process.env.PORT || 3000;
 
 // Clave secreta para firmar y verificar los tokens JWT.
 // Mover a una variable de entorno (.env) antes de desplegar en producción.
