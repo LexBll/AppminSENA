@@ -145,7 +145,8 @@ app.get('/api/conjuntos', (req, res) => {
 // Accesible desde la página de login para que un nuevo admin pueda registrarse.
 // =========================================================================
 app.post('/api/auth/registro', (req, res) => {
-    const { nombres, apellidos, telefono, usuario, contrasena, codigoConjunto } = req.body;
+    const { nombres, apellidos, telefono, usuario, contrasena } = req.body;
+    const codigoConjunto = null;
 
     // bcrypt.hash genera un hash seguro con 10 rondas de salt.
     // El hash resultante tiene el formato: $2b$10$<salt><hash>

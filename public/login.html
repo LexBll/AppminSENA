@@ -71,15 +71,6 @@
                 <input type="tel" id="telefono" v-model="formRegistro.telefono" required>
             </div>
             <div>
-                <label for="codigoConjunto">Conjunto Residencial:</label>
-                <select id="codigoConjunto" v-model.number="formRegistro.codigoConjunto">
-                    <option :value="null">— Sin asignar —</option>
-                    <option v-for="c in conjuntos" :key="c.codigo_conjunto" :value="c.codigo_conjunto">
-                        {{ c.nombre_conjunto }}
-                    </option>
-                </select>
-            </div>
-            <div>
                 <label for="usuarioReg">Usuario:</label>
                 <input type="text" id="usuarioReg" v-model="formRegistro.usuario" required>
             </div>
@@ -134,22 +125,12 @@
                         nombres: '',
                         apellidos: '',
                         telefono: '',
-                        codigoConjunto: null,
                         usuario: '',
                         contrasena: ''
                     },
                     estadoRegistro: 'idle', // 'idle' | 'cargando' | 'exito' | 'error'
-                    mensajeRegistro: '',
-                    conjuntos: []
+                    mensajeRegistro: ''
                 };
-            },
-            async mounted() {
-                try {
-                    const res = await fetch('/api/conjuntos');
-                    this.conjuntos = await res.json();
-                } catch (e) {
-                    console.error('No se pudieron cargar los conjuntos:', e);
-                }
             },
             methods: {
                 // Cambia entre vistas y limpia los estados de los formularios
