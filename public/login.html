@@ -71,6 +71,11 @@
                 <input type="tel" id="telefono" v-model="formRegistro.telefono" required>
             </div>
             <div>
+                <label for="nombreConjunto">Nombre de tu Conjunto <span style="font-weight:normal;color:#999;">(opcional)</span>:</label>
+                <input type="text" id="nombreConjunto" v-model="formRegistro.nombreConjunto"
+                       placeholder="Ej: Conjunto Los Andes">
+            </div>
+            <div>
                 <label for="usuarioReg">Usuario:</label>
                 <input type="text" id="usuarioReg" v-model="formRegistro.usuario" required>
             </div>
@@ -125,6 +130,7 @@
                         nombres: '',
                         apellidos: '',
                         telefono: '',
+                        nombreConjunto: '',
                         usuario: '',
                         contrasena: ''
                     },

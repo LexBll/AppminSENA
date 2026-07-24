@@ -145,35 +145,68 @@ app.get('/api/conjuntos', (req, res) => {
 // Accesible desde la página de login para que un nuevo admin pueda registrarse.
 // =========================================================================
 app.post('/api/auth/registro', (req, res) => {
-    const { nombres, apellidos, telefono, usuario, contrasena } = req.body;
-    const codigoConjunto = null;
+    const { nombres, apellidos, telefono, usuario, contrasena, nombreConjunto } = req.body;
 
-    // bcrypt.hash genera un hash seguro con 10 rondas de salt.
-    // El hash resultante tiene el formato: $2b$10$<salt><hash>
-    // Se guarda el hash en la BD, nunca la contraseña en texto plano.
     bcrypt.hash(contrasena, 10, (error, hash) => {
         if (error) {
             console.error('❌ Error al hashear contraseña:', error);
             return res.status(500).json({ mensaje: 'Error al procesar la contraseña' });
         }
 
-        // Columnas corregidas para coincidir con la estructura real de la tabla:
-        // nombres, apellidos y telefono como campos separados.
-        const sqlQuery = `
-            INSERT INTO Administradores (nombres, apellidos, telefono, usuario, contrasena, codigo_conjunto)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `;
-
-        conexion.query(sqlQuery, [nombres, apellidos, telefono, usuario, hash, codigoConjunto], (error) => {
-            if (error) {
-                console.error('❌ Error al registrar administrador:', error);
-                if (error.code === 'ER_DUP_ENTRY') {
-                    return res.status(400).json({ mensaje: 'El nombre de usuario ya está en uso' });
+        const insertarAdmin = (codigoConjunto) => {
+            const sqlQuery = `
+                INSERT INTO Administradores (nombres, apellidos, telefono, usuario, contrasena, codigo_conjunto)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `;
+            conexion.query(sqlQuery, [nombres, apellidos, telefono, usuario, hash, codigoConjunto], (error) => {
+                if (error) {
+                    console.error('❌ Error al registrar administrador:', error);
+                    if (error.code === 'ER_DUP_ENTRY') {
+                        return res.status(400).json({ mensaje: 'El nombre de usuario ya está en uso' });
+                    }
+                    return res.status(500).json({ mensaje: 'Error interno al crear la cuenta' });
                 }
-                return res.status(500).json({ mensaje: 'Error interno al crear la cuenta' });
+                res.status(201).json({ mensaje: 'Cuenta de administrador creada con éxito' });
+            });
+        };
+
+        // Si no escribió conjunto, se registra sin vincular
+        if (!nombreConjunto || nombreConjunto.trim() === '') {
+            return insertarAdmin(null);
+        }
+
+        const nombre = nombreConjunto.trim();
+
+        // Buscar si el conjunto ya existe por nombre
+        conexion.query(
+            'SELECT codigo_conjunto FROM Conjuntos WHERE nombre_conjunto = ?',
+            [nombre],
+            (error, resultados) => {
+                if (error) {
+                    console.error('❌ Error buscando conjunto:', error);
+                    return res.status(500).json({ mensaje: 'Error al buscar el conjunto' });
+                }
+
+                if (resultados.length > 0) {
+                    // Ya existe → vincular al admin con ese conjunto
+                    insertarAdmin(resultados[0].codigo_conjunto);
+                } else {
+                    // No existe → crearlo con valores por defecto y vincular
+                    conexion.query(
+                        `INSERT INTO Conjuntos (nombre_conjunto, direccion, numero_bloques, numero_aptos, pais, ciudad)
+                         VALUES (?, 'Sin especificar', 1, 1, 'Colombia', 'Sin especificar')`,
+                        [nombre],
+                        (error, resultado) => {
+                            if (error) {
+                                console.error('❌ Error creando conjunto:', error);
+                                return res.status(500).json({ mensaje: 'Error al crear el conjunto' });
+                            }
+                            insertarAdmin(resultado.insertId);
+                        }
+                    );
+                }
             }
-            res.status(201).json({ mensaje: 'Cuenta de administrador creada con éxito' });
-        });
+        );
     });
 });
 
